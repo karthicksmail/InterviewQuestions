@@ -18,9 +18,10 @@ public class Trivial100Doors {
 
 	public static void main(String[] args) {
 		final int DOOR_CNT = 100;
+		final int ITER_CNT = 100;
 		boolean doors[] = new boolean[DOOR_CNT];
 
-		for (int iter = 1; iter <= doors.length; iter++) {
+		for (int iter = 1; iter <= ITER_CNT; iter++) {
 			for (int door = 0; door < doors.length; door++) {
 				int doorNum = door + 1;
 				if (doorNum % iter == 0) {
