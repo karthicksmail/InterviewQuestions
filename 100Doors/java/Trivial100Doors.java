@@ -1,5 +1,5 @@
 public class Trivial100Doors {
-	public static void displayStatus(boolean[] doors) {
+	private static void displayStatus(boolean[] doors) {
 		System.out.println("The following doors are closed: " );
 		for (int door = 0; door < doors.length; door++) {
 			if (doors[door] == true) {
@@ -18,7 +18,7 @@ public class Trivial100Doors {
 
 	public static void main(String[] args) {
 		final int DOOR_CNT = 100;
-		final int ITER_CNT = 100;
+		final int ITER_CNT = 75;
 		boolean doors[] = new boolean[DOOR_CNT];
 
 		for (int iter = 1; iter <= ITER_CNT; iter++) {
