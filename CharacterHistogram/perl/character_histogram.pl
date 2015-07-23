@@ -8,7 +8,7 @@ use feature 'switch';
 
 my ($filename, $shld_cnt_words, $shld_cnt_chars);
 my ($op_format);
-my $USAGE="./character_histogram.pl [-p[a|w]] [-o[c|w|uw|cw|cc]] <filename>\n";
+my $USAGE="./character_histogram.pl [-p[a|w]] [-o[a|u|c]] <filename>\n\t-p - Process based on\n\t\ta - characters\n\t\tw - words\n\t-o - Output\n\t\ta - all values\n\t\tu - values that occur only once\n\t\tc - values that occur atleast 10% of the total occurrences";
 
 sub count_words
 {
@@ -48,15 +48,42 @@ sub count_elems
 
 sub format_for_print
 {
-#	my (%count_hash) = @_;
 	my $format_sub_ref;
-	if ($op_format == 0 || $op_format == 1)
+	if ($op_format == 0)
 	{
 		$format_sub_ref = sub
 					{
-						my(%count_hash) = @_;
+						my (%count_hash) = @_;
 						my @keys = sort { $count_hash{$b} <=> $count_hash{$a} } keys %count_hash;
 						return @keys;
+					};
+	}
+	elsif ($op_format == 1)
+	{
+		$format_sub_ref = sub
+					{
+						my (%count_hash) = @_;
+						my @op_keys;
+						foreach ((keys %count_hash))
+						{
+							push(@op_keys, $_) if($count_hash{$_} == 1);
+						}
+						return sort @op_keys;
+					};
+	}
+	elsif ($op_format == 2)
+	{
+		$format_sub_ref = sub
+					{
+						my (%count_hash) = @_;
+						my @op_keys;
+						my $count += $_ foreach (values %count_hash);
+						$count = $count / 10;
+						foreach ((keys %count_hash))
+						{
+							push(@op_keys, $_) if($count_hash{$_} >= $count);
+						}
+						return @op_keys;
 					};
 	}
 	return $format_sub_ref;
@@ -100,14 +127,17 @@ sub process_args
 	foreach my $arg (@cmd_line_args)
 	{
 		# if it starts with a -, then it is an option
-		# if it is an option, then it has to have one of the following: pa, pw, oc, ouw, ocw, occ
-		# if it is not an option, then it is the name of the file to be processed
+		# if it is an option, then it has to have one of the following: pa, pw, os, ou, oc
+		# A call will have one processing flag and one output flag only.
+		# if it is not an option, then it is the name of the file to be processed.
+
 		#say ("---".$arg."---");
 		if ($arg =~ m/^-/)
 		{
 			#say("-");
 			if ($arg =~ m/^-p/)
 			{
+				# The options starting with p stand for the processing flags: By character and by words.
 #				say("-p");
 				if ($arg =~ m/a/)
 				{
@@ -126,36 +156,25 @@ sub process_args
 			}
 			elsif ($arg =~ m/^-o/)
 			{
-				say("-o");
-				if ($arg =~ m/c/)
+				# The options starting with o stand for the output flags: All data, Unique elements (words/chars appearing once only), elements that are at least 10% of the total number of elements.
+#				say("-o");
+				if ($arg =~ m/a/)
 				{
 					#say("-oc");
 #					$op_chars = 1;
 					$op_format = 0;
 				}
-				elsif ($arg =~ m/w/)
-				{
-					#say("-ow");
-#					$op_words = 1;
-					$op_format = 1;
-				}
-				elsif ($arg =~ m/uw/)
+				elsif ($arg =~ m/u/)
 				{
 					#say("-ouw");
 #					$op_unique_words = 1;
-					$op_format = 2;
+					$op_format = 1;
 				}
-				elsif ($arg =~ m/cw/)
+				elsif ($arg =~ m/c/)
 				{
 					#say("-ocw");
 #					$op_common_words = 1;
-					$op_format = 3;
-				}
-				elsif ($arg =~ m/cc/)
-				{
-					#say("-occ");
-#					$op_common_chars = 1;
-					$op_format = 4;
+					$op_format = 2;
 				}
 			}
 		}
@@ -168,12 +187,12 @@ sub process_args
 	#Check if at least one of the processing options is chosen
 	if (! defined $shld_cnt_words && ! defined $shld_cnt_chars)
 	{
-		die $USAGE;
+		print $USAGE and exit;
 	}
 
 	if (!defined($filename))
 	{
-		die $USAGE;
+		print $USAGE and exit;
 	}
 }
 
