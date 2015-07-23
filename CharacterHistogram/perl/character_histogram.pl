@@ -3,10 +3,12 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Getopt::Long;
+use feature 'say';
+use feature 'switch';
 
 my ($filename, $shld_cnt_words, $shld_cnt_chars);
-my $USAGE="./character_histogram.pl [-c|-w] <filename>\n";
+my ($op_format);
+my $USAGE="./character_histogram.pl [-p[a|w]] [-o[c|w|uw|cw|cc]] <filename>\n";
 
 sub count_words
 {
@@ -24,7 +26,10 @@ sub count_chars
 	our (%elem_count, $elem);
 	foreach $elem (split(//, $line) )
 	{
-		$elem_count{$elem}++ if $elem =~ /[[:alpha:]]/;
+		if ($elem =~ /[[:alpha:]]/)
+		{
+			$elem_count{$elem}++; #if $elem =~ /[[:alpha:]]/;
+		}
 	}
 }
 
@@ -41,29 +46,50 @@ sub count_elems
 	return %elem_count;
 }
 
-sub print_count_hash
+sub format_for_print
 {
-	my (%count_hash) = @_;
-	my $key;
-	foreach $key (reverse sort { $count_hash{$a} <=> $count_hash{$b} } keys %count_hash)
+#	my (%count_hash) = @_;
+	my $format_sub_ref;
+	if ($op_format == 0 || $op_format == 1)
 	{
-		printf("%s %s\n", $key, $count_hash{$key});
+		$format_sub_ref = sub
+					{
+						my(%count_hash) = @_;
+						my @keys = sort { $count_hash{$b} <=> $count_hash{$a} } keys %count_hash;
+						return @keys;
+					};
+	}
+	return $format_sub_ref;
+}
+
+sub print_hash
+{
+	my ($format_sub_ref, %hash) = @_;
+	foreach my $key ($format_sub_ref->(%hash))
+	{
+#		print $key."\n";
+		printf($key." ".$hash{$key}."\n");
 	}
 }
 
 sub main
 {
 	open (FH, $filename) or die "$filename could not be opened";
+	my %hash;
 
 	if (defined $shld_cnt_words)
 	{
-		&print_count_hash(&count_elems(\&count_words));
+		%hash = &count_elems(\&count_words);
+	#	print("Size of hash: ".keys(%hash));
+		&print_hash(&format_for_print(%hash), %hash);
 	}
 	seek(FH, 0, 0);
 
 	if (defined $shld_cnt_chars)
 	{
-		&print_count_hash(&count_elems(\&count_chars));
+		%hash = &count_elems(\&count_chars);
+		#print("Size of hash: ".keys(%hash));
+		&print_hash(&format_for_print(%hash), %hash);
 	}
 }
 
@@ -74,21 +100,63 @@ sub process_args
 	foreach my $arg (@cmd_line_args)
 	{
 		# if it starts with a -, then it is an option
-		# if it is an option, then it has to have one of the valid characters: c, w
+		# if it is an option, then it has to have one of the following: pa, pw, oc, ouw, ocw, occ
 		# if it is not an option, then it is the name of the file to be processed
+		#say ("---".$arg."---");
 		if ($arg =~ m/^-/)
 		{
-			if ($arg eq "-c")
+			#say("-");
+			if ($arg =~ m/^-p/)
 			{
-				$shld_cnt_chars = 1;
+#				say("-p");
+				if ($arg =~ m/a/)
+				{
+					#say("-pa");
+					$shld_cnt_chars = 1;
+				}
+				if ($arg =~ m/w/)
+				{
+					#say("-pw");
+					$shld_cnt_words = 1;
+				}
+#				if ($arg eq "-paw" || $arg eq "-pwa")
+#				{
+#					$shld_cnt_words = $shld_cnt_chars = 1;
+#				}
 			}
-			if ($arg eq "-w")
+			elsif ($arg =~ m/^-o/)
 			{
-				$shld_cnt_words = 1;
-			}
-			if ($arg eq "-cw" || $arg eq "-wc")
-			{
-				$shld_cnt_words = $shld_cnt_chars = 1;
+				say("-o");
+				if ($arg =~ m/c/)
+				{
+					#say("-oc");
+#					$op_chars = 1;
+					$op_format = 0;
+				}
+				elsif ($arg =~ m/w/)
+				{
+					#say("-ow");
+#					$op_words = 1;
+					$op_format = 1;
+				}
+				elsif ($arg =~ m/uw/)
+				{
+					#say("-ouw");
+#					$op_unique_words = 1;
+					$op_format = 2;
+				}
+				elsif ($arg =~ m/cw/)
+				{
+					#say("-ocw");
+#					$op_common_words = 1;
+					$op_format = 3;
+				}
+				elsif ($arg =~ m/cc/)
+				{
+					#say("-occ");
+#					$op_common_chars = 1;
+					$op_format = 4;
+				}
 			}
 		}
 		else
